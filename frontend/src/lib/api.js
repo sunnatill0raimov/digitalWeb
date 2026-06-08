@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: 'http://46.101.251.84/api' });
+const api = axios.create({ baseURL: 'https://eturnir.uz/api' });
 
 api.interceptors.request.use(cfg => {
   const s = localStorage.getItem('crm-auth');

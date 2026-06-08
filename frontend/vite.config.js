@@ -5,8 +5,5 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: {
-      '/uploads': { target: 'http://46.101.251.84', changeOrigin: true }
-    }
   }
 });
