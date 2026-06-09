@@ -6,12 +6,7 @@ const initDB   = require('./config/initDB');
 
 const app = express();
 
-app.use(cors({
-  origin: '*',
-  credentials: false,
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization']
-}));
+app.use(cors());
 app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
