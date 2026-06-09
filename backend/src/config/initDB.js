@@ -105,7 +105,10 @@ async function initDB() {
     // Default categories
     const cats = [
       "Erkaklar kiyimi", "Ayollar kiyimi", "Bolalar kiyimi",
-      "Sport kiyimlari", "Shimlar", "Kurtaklar", "Paltolar", "Futbolkalar"
+      "Sport kiyimlari", "Shimlar",        "Kurtaklar",
+      "Paltolar",        "Futbolkalar",    "Ichki kiyim",
+      "Poyabzal",        "Sumkalar",       "Aksessuarlar",
+      "Yozgi kollekciya","Qishki kollekciya","Milliy kiyim",
     ];
     for (const c of cats) {
       await client.query(

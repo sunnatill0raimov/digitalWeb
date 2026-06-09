@@ -7,7 +7,6 @@ import Customers  from './pages/Customers';
 import Products   from './pages/Products';
 import Orders     from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
-import Inventory  from './pages/Inventory';
 import Users      from './pages/Users';
 
 function Guard({ children, roles }) {
@@ -28,7 +27,6 @@ export default function App() {
         <Route path="/products"  element={<Products/>}/>
         <Route path="/orders"    element={<Orders/>}/>
         <Route path="/orders/:id" element={<OrderDetail/>}/>
-        <Route path="/inventory" element={<Inventory/>}/>
         <Route path="/users" element={
           <Guard roles={['admin']}><Users/></Guard>
         }/>

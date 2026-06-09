@@ -6,7 +6,6 @@ const LINKS = [
   { to: '/customers',  icon: '◎', label: 'Mijozlar'       },
   { to: '/products',   icon: '◈', label: 'Mahsulotlar'    },
   { to: '/orders',     icon: '◧', label: 'Buyurtmalar'    },
-  { to: '/inventory',  icon: '◫', label: 'Ombor'          },
 ];
 
 const icons = {
