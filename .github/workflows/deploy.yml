@@ -17,6 +17,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Write backend .env
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          envs: DATABASE_URL,JWT_SECRET,FRONTEND_URL,ALLOWED_ORIGINS
+          script: |
+            mkdir -p /var/www/digitalWeb/backend
+            printf 'DATABASE_URL=%s\nJWT_SECRET=%s\nJWT_EXPIRES_IN=7d\nPORT=3000\nFRONTEND_URL=%s\nALLOWED_ORIGINS=%s\n' \
+              "$DATABASE_URL" "$JWT_SECRET" "$FRONTEND_URL" "$ALLOWED_ORIGINS" \
+              > /var/www/digitalWeb/backend/.env
+            echo "✅ .env fayl yozildi"
+
       - name: Deploy backend via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
