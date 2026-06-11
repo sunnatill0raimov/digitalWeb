@@ -17,24 +17,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Write backend .env
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DO_HOST }}
-          username: ${{ secrets.DO_USER }}
-          key: ${{ secrets.DO_SSH_KEY }}
-          script: |
-            mkdir -p /var/www/digitalWeb/backend
-            cat > /var/www/digitalWeb/backend/.env << 'ENVEOF'
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            JWT_EXPIRES_IN=7d
-            PORT=3000
-            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
-            ENVEOF
-            echo "✅ .env fayl yozildi"
-
       - name: Deploy backend via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -50,17 +32,23 @@ jobs:
             fi
 
             cd /var/www/digitalWeb
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Backend .env yozish (git pull dan keyin)
+            cat > /var/www/digitalWeb/backend/.env <<EOF
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRES_IN=7d
+            PORT=3000
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
+            EOF
+            echo "✅ .env yozildi"
 
             # Backend dependencies
-            cd backend
+            cd /var/www/digitalWeb/backend
             npm ci --omit=dev
-
-            # .env faylni tekshirish
-            if [ ! -f ".env" ]; then
-              echo "❌ .env fayl topilmadi!" && exit 1
-            fi
-            echo "✅ .env fayl mavjud: $(wc -l < .env) qator"
 
             # PM2 restart (app nomi: crm-backend)
             pm2 restart crm-backend || pm2 start src/server.js --name crm-backend

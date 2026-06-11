@@ -93,11 +93,15 @@ export default function Dashboard() {
     ? Math.round(((+lastM?.total - +prevM.total) / +prevM.total) * 100)
     : null;
 
-  const ordMonths = data.monthlyRevenueTrend || [];
+  const ordMonths = (data.monthlyRevenueTrend || []).length > 0
+    ? data.monthlyRevenueTrend
+    : data.monthlySales || [];
   const lastOM    = ordMonths[ordMonths.length - 1];
   const prevOM    = ordMonths[ordMonths.length - 2];
   const ordTrend  = prevOM && +prevOM.orders_count > 0
     ? Math.round(((+lastOM?.orders_count - +prevOM.orders_count) / +prevOM.orders_count) * 100)
+    : prevOM && +prevOM.count > 0
+    ? Math.round(((+(lastOM?.count ?? 0) - +prevOM.count) / +prevOM.count) * 100)
     : null;
 
   // Donut uchun
@@ -108,13 +112,24 @@ export default function Dashboard() {
   }));
   const totalStatusCount = statusData.reduce((s, d) => s + d.value, 0);
 
-  // Combo chart: revenue + paid
-  const comboData = (data.monthlyRevenueTrend || []).map(r => ({
-    month:        r.month,
-    "Jami savdo": +r.revenue,
-    "To'langan":  +r.paid,
-    "Buyurtmalar":+r.orders_count,
-  }));
+  // Combo chart: monthlyRevenueTrend bo'lsa undan, bo'lmasa monthlySales dan qur
+  const trendSource = (data.monthlyRevenueTrend || []).length > 0
+    ? data.monthlyRevenueTrend
+    : null;
+
+  const comboData = trendSource
+    ? trendSource.map(r => ({
+        month:        r.month,
+        "Jami savdo": +r.revenue,
+        "To'langan":  +r.paid,
+        "Buyurtmalar":+r.orders_count,
+      }))
+    : (data.monthlySales || []).map(r => ({
+        month:        r.month,
+        "Jami savdo": +r.total,
+        "To'langan":  0,
+        "Buyurtmalar":+r.count,
+      }));
 
   // Top customers max
   const maxSpent = Math.max(...(data.topCustomers || []).map(c => +c.total_spent), 1);

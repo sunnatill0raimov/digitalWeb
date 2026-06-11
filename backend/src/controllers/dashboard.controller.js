@@ -2,10 +2,10 @@ const pool = require('../config/db');
 
 exports.stats = async (req, res) => {
   try {
+    // Core queries — bular albatta kerak
     const [
       customers, products, orders, revenue,
       lowStock, monthlySales, recentOrders, topProducts,
-      ordersByStatus, monthlyRevenueTrend, topCustomers
     ] = await Promise.all([
 
       // Jami mijozlar
@@ -31,7 +31,7 @@ exports.stats = async (req, res) => {
         ORDER BY p.quantity ASC LIMIT 8
       `),
 
-      // 6 oylik oylik savdo
+      // 6 oylik oylik savdo — month faqat qisqa nom (Jan, Feb ...)
       pool.query(`
         SELECT
           TO_CHAR(DATE_TRUNC('month', created_at), 'Mon') AS month,
@@ -58,7 +58,8 @@ exports.stats = async (req, res) => {
 
       // Top 5 mahsulot (30 kun)
       pool.query(`
-        SELECT p.name, p.sku, SUM(oi.quantity) AS sold,
+        SELECT p.name, p.sku,
+               SUM(oi.quantity) AS sold,
                SUM(oi.quantity * oi.price) AS revenue
         FROM order_items oi
         JOIN products p ON oi.product_id = p.id
@@ -68,17 +69,20 @@ exports.stats = async (req, res) => {
         GROUP BY p.id, p.name, p.sku
         ORDER BY sold DESC LIMIT 5
       `),
+    ]);
 
-      // Buyurtmalar status bo'yicha
+    // Qo'shimcha queries — xato bersa bo'sh qaytaradi
+    const [ordersByStatus, monthlyRevenueTrend, topCustomers] = await Promise.all([
+
       pool.query(`
         SELECT status, COUNT(*) AS count,
                COALESCE(SUM(total_amount), 0) AS total
         FROM orders
         GROUP BY status
         ORDER BY count DESC
-      `),
+      `).catch(() => ({ rows: [] })),
 
-      // 6 oylik har haftadagi trend (oy+hafta)
+      // 6 oylik trend — month faqat qisqa nom
       pool.query(`
         SELECT
           TO_CHAR(DATE_TRUNC('month', created_at), 'Mon') AS month,
@@ -91,9 +95,9 @@ exports.stats = async (req, res) => {
         WHERE created_at >= NOW() - INTERVAL '6 months'
         GROUP BY 1, 2
         ORDER BY 2
-      `),
+      `).catch(() => ({ rows: [] })),
 
-      // Top 5 mijoz (umumiy xarid)
+      // Top 5 mijoz
       pool.query(`
         SELECT c.id, c.company_name,
                COUNT(o.id)              AS orders_count,
@@ -103,24 +107,24 @@ exports.stats = async (req, res) => {
           AND o.status != 'cancelled'
         GROUP BY c.id, c.company_name
         ORDER BY total_spent DESC LIMIT 5
-      `)
+      `).catch(() => ({ rows: [] })),
     ]);
 
     res.json({
-      totalCustomers:    +customers.rows[0].count,
-      totalProducts:     +products.rows[0].count,
-      totalOrders:       +orders.rows[0].count,
-      totalRevenue:      +revenue.rows[0].total,
-      lowStockProducts:  lowStock.rows,
-      monthlySales:      monthlySales.rows,
-      recentOrders:      recentOrders.rows,
-      topProducts:       topProducts.rows,
-      ordersByStatus:    ordersByStatus.rows,
+      totalCustomers:      +customers.rows[0].count,
+      totalProducts:       +products.rows[0].count,
+      totalOrders:         +orders.rows[0].count,
+      totalRevenue:        +revenue.rows[0].total,
+      lowStockProducts:    lowStock.rows,
+      monthlySales:        monthlySales.rows,
+      recentOrders:        recentOrders.rows,
+      topProducts:         topProducts.rows,
+      ordersByStatus:      ordersByStatus.rows,
       monthlyRevenueTrend: monthlyRevenueTrend.rows,
-      topCustomers:      topCustomers.rows,
+      topCustomers:        topCustomers.rows,
     });
   } catch (e) {
-    console.error(e);
+    console.error('Dashboard xatosi:', e);
     res.status(500).json({ message: 'Server xatosi' });
   }
 };
