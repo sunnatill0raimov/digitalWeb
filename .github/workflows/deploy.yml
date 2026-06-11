@@ -23,12 +23,16 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
-          envs: DATABASE_URL,JWT_SECRET,FRONTEND_URL,ALLOWED_ORIGINS
           script: |
             mkdir -p /var/www/digitalWeb/backend
-            printf 'DATABASE_URL=%s\nJWT_SECRET=%s\nJWT_EXPIRES_IN=7d\nPORT=3000\nFRONTEND_URL=%s\nALLOWED_ORIGINS=%s\n' \
-              "$DATABASE_URL" "$JWT_SECRET" "$FRONTEND_URL" "$ALLOWED_ORIGINS" \
-              > /var/www/digitalWeb/backend/.env
+            cat > /var/www/digitalWeb/backend/.env << 'ENVEOF'
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRES_IN=7d
+            PORT=3000
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
+            ENVEOF
             echo "✅ .env fayl yozildi"
 
       - name: Deploy backend via SSH
@@ -51,6 +55,12 @@ jobs:
             # Backend dependencies
             cd backend
             npm ci --omit=dev
+
+            # .env faylni tekshirish
+            if [ ! -f ".env" ]; then
+              echo "❌ .env fayl topilmadi!" && exit 1
+            fi
+            echo "✅ .env fayl mavjud: $(wc -l < .env) qator"
 
             # PM2 restart (app nomi: crm-backend)
             pm2 restart crm-backend || pm2 start src/server.js --name crm-backend
