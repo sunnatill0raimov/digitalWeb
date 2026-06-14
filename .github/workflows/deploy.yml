@@ -24,7 +24,6 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
-          envs: DATABASE_URL,JWT_SECRET,FRONTEND_URL,ALLOWED_ORIGINS
           script: |
             set -e
 
@@ -33,22 +32,22 @@ jobs:
             fi
 
             cd /var/www/digitalWeb
+
+            # Eski .env ni saqlash (overwrite qilmaymiz)
+            if [ -f backend/.env ]; then
+              cp backend/.env /tmp/backend_env_backup
+            fi
+
             git fetch origin main
             git reset --hard origin/main
 
-            # .env yozish — envs orqali kelgan environment variable lar
-            cat > /var/www/digitalWeb/backend/.env << ENVEOF
-DATABASE_URL=${DATABASE_URL}
-JWT_SECRET=${JWT_SECRET}
-JWT_EXPIRES_IN=7d
-PORT=3000
-FRONTEND_URL=${FRONTEND_URL}
-ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
-ENVEOF
+            # .env ni qaytarish
+            if [ -f /tmp/backend_env_backup ]; then
+              cp /tmp/backend_env_backup backend/.env
+              echo "✅ .env saqlangan versiyadan tiklandi"
+            fi
 
-            echo "✅ .env yozildi ($(wc -l < /var/www/digitalWeb/backend/.env) qator)"
-
-            cd /var/www/digitalWeb/backend
+            cd backend
             npm ci --omit=dev
 
             pm2 restart crm-backend || pm2 start src/server.js --name crm-backend
