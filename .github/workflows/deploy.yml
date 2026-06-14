@@ -50,7 +50,8 @@ jobs:
             cd backend
             npm ci --omit=dev
 
-            pm2 restart crm-backend || pm2 start src/server.js --name crm-backend
+            pm2 delete crm-backend || true
+            pm2 start src/server.js --name crm-backend
             pm2 save
 
             echo "✅ Backend deploy tugadi"
