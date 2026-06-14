@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   # ─────────────────────────────────────────
@@ -23,10 +24,10 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
+          envs: DATABASE_URL,JWT_SECRET,FRONTEND_URL,ALLOWED_ORIGINS
           script: |
             set -e
 
-            # Repo mavjud bo'lmasa clone qiladi, bo'lsa pull qiladi
             if [ ! -d "/var/www/digitalWeb/.git" ]; then
               git clone https://github.com/sunnatill0raimov/digitalWeb.git /var/www/digitalWeb
             fi
@@ -35,22 +36,21 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            # Backend .env yozish (git pull dan keyin)
-            cat > /var/www/digitalWeb/backend/.env <<EOF
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            JWT_EXPIRES_IN=7d
-            PORT=3000
-            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
-            EOF
-            echo "✅ .env yozildi"
+            # .env yozish — envs orqali kelgan environment variable lar
+            cat > /var/www/digitalWeb/backend/.env << ENVEOF
+DATABASE_URL=${DATABASE_URL}
+JWT_SECRET=${JWT_SECRET}
+JWT_EXPIRES_IN=7d
+PORT=3000
+FRONTEND_URL=${FRONTEND_URL}
+ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+ENVEOF
 
-            # Backend dependencies
+            echo "✅ .env yozildi ($(wc -l < /var/www/digitalWeb/backend/.env) qator)"
+
             cd /var/www/digitalWeb/backend
             npm ci --omit=dev
 
-            # PM2 restart (app nomi: crm-backend)
             pm2 restart crm-backend || pm2 start src/server.js --name crm-backend
             pm2 save
 
