@@ -27,34 +27,44 @@ jobs:
           script: |
             set -e
 
+            # Repo clone yoki pull
             if [ ! -d "/var/www/digitalWeb/.git" ]; then
               git clone https://github.com/sunnatill0raimov/digitalWeb.git /var/www/digitalWeb
             fi
 
-            cd /var/www/digitalWeb
-
-            # Eski .env ni saqlash (overwrite qilmaymiz)
-            if [ -f backend/.env ]; then
-              cp backend/.env /tmp/backend_env_backup
+            # .env ni vaqtinchalik saqlash
+            if [ -f /var/www/digitalWeb/backend/.env ]; then
+              cp /var/www/digitalWeb/backend/.env /tmp/crm_backend_env
             fi
 
+            cd /var/www/digitalWeb
             git fetch origin main
             git reset --hard origin/main
 
-            # .env ni qaytarish
-            if [ -f /tmp/backend_env_backup ]; then
-              cp /tmp/backend_env_backup backend/.env
-              echo "✅ .env saqlangan versiyadan tiklandi"
+            # .env qaytarish
+            if [ -f /tmp/crm_backend_env ]; then
+              cp /tmp/crm_backend_env /var/www/digitalWeb/backend/.env
             fi
 
-            cd backend
+            # .env yo'q bo'lsa xato
+            if [ ! -f /var/www/digitalWeb/backend/.env ]; then
+              echo "❌ XATO: backend/.env topilmadi!"
+              exit 1
+            fi
+
+            cd /var/www/digitalWeb/backend
             npm ci --omit=dev
 
-            pm2 delete crm-backend || true
-            pm2 start src/server.js --name crm-backend
+            # PM2: mavjud bo'lsa reload, bo'lmasa start
+            if pm2 describe crm-backend > /dev/null 2>&1; then
+              pm2 reload crm-backend
+            else
+              pm2 start src/server.js --name crm-backend
+            fi
             pm2 save
 
             echo "✅ Backend deploy tugadi"
+            pm2 list
 
   # ─────────────────────────────────────────
   # 2. FRONTEND BUILD + DEPLOY
