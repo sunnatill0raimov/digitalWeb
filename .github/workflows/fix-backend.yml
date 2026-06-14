@@ -2,6 +2,9 @@ name: Fix Backend Emergency
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   fix:
@@ -14,29 +17,26 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
-          envs: DATABASE_URL,JWT_SECRET,FRONTEND_URL,ALLOWED_ORIGINS
           script: |
             set -e
-
             mkdir -p /var/www/digitalWeb/backend
 
-            cat > /var/www/digitalWeb/backend/.env << ENVEOF
-DATABASE_URL=${DATABASE_URL}
-JWT_SECRET=${JWT_SECRET}
+            cat > /var/www/digitalWeb/backend/.env << 'ENVEOF'
+DATABASE_URL=postgresql://digitalcrm_user:tT4mkjNqBeKyxuwmQH2h0bfue9mSfUzC@dpg-d8ih8t5ckfvc73bqjjqg-a.oregon-postgres.render.com/digitalcrm
+JWT_SECRET=digital-cloud
 JWT_EXPIRES_IN=7d
 PORT=3000
-FRONTEND_URL=${FRONTEND_URL}
-ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+FRONTEND_URL=https://eturnir.uz
+ALLOWED_ORIGINS=https://eturnir.uz,http://localhost:5173
 ENVEOF
 
-            echo "✅ .env yozildi:"
+            echo "✅ .env yozildi"
             cat /var/www/digitalWeb/backend/.env
 
             cd /var/www/digitalWeb/backend
             pm2 delete crm-backend || true
             pm2 start src/server.js --name crm-backend
             pm2 save
-
-            echo "✅ Backend ishga tushdi"
             sleep 3
             pm2 list
+            echo "✅ Backend ishga tushdi"
