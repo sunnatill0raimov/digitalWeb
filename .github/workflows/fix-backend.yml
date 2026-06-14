@@ -1,0 +1,42 @@
+name: Fix Backend Emergency
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    name: 🔧 Backend tuzatish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write .env and restart backend
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          envs: DATABASE_URL,JWT_SECRET,FRONTEND_URL,ALLOWED_ORIGINS
+          script: |
+            set -e
+
+            mkdir -p /var/www/digitalWeb/backend
+
+            cat > /var/www/digitalWeb/backend/.env << ENVEOF
+DATABASE_URL=${DATABASE_URL}
+JWT_SECRET=${JWT_SECRET}
+JWT_EXPIRES_IN=7d
+PORT=3000
+FRONTEND_URL=${FRONTEND_URL}
+ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+ENVEOF
+
+            echo "✅ .env yozildi:"
+            cat /var/www/digitalWeb/backend/.env
+
+            cd /var/www/digitalWeb/backend
+            pm2 delete crm-backend || true
+            pm2 start src/server.js --name crm-backend
+            pm2 save
+
+            echo "✅ Backend ishga tushdi"
+            sleep 3
+            pm2 list
